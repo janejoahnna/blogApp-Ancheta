@@ -39,17 +39,44 @@ module.exports.getPostById = (req, res) => {
 
 // Update a post by ID
 module.exports.updatePost = (req, res) => {
+  const { postId } = req.params;
   const { title, content, author, createdAt } = req.body;
-  Post.findByIdAndUpdate(req.params.postId, { title, content, author, createdAt }, { new: true })
-    .then(post => res.status(200).send({ message: 'Post updated successfully', post }))
-    .catch(error => auth.errorHandler(error, req, res));
+
+  // Ensure all fields are provided
+  if (!title || !content || !author || !createdAt) {
+    return res.status(400).json({ message: 'All fields are required' });
+  }
+
+  Post.findByIdAndUpdate(postId, { title, content, author, createdAt }, { new: true })
+    .then(post => {
+      if (!post) {
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      res.status(200).json({ message: 'Post updated successfully', post });
+    })
+    .catch(error => {
+      console.error('Error updating post:', error);
+      res.status(500).json({ message: 'Server error', error });
+    });
 };
 
 // Delete a post by ID
 module.exports.deletePost = (req, res) => {
-  Post.findByIdAndDelete(req.params.postId)
-    .then(post => res.status(200).send({ message: 'Post deleted successfully', post }))
-    .catch(error => auth.errorHandler(error, req, res));
+  const { postId } = req.params;
+
+  // Check if postId is valid and delete the post
+  Post.findByIdAndDelete(postId)
+    .then(post => {
+      if (!post) {
+        // If post with postId doesn't exist
+        return res.status(404).json({ message: 'Post not found' });
+      }
+      res.status(200).json({ message: 'Post deleted successfully', post });
+    })
+    .catch(error => {
+      console.error('Error deleting post:', error);
+      res.status(500).json({ message: 'Server error', error });
+    });
 };
 
 // Add a comment to a post
